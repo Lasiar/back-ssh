@@ -16,6 +16,7 @@ func init() {
 func main() {
 	http.HandleFunc("/gateway/telegram/count-point", web.CountPoint)
 	http.HandleFunc("/gateway/telegram/info-point", web.InfoPoint)
+	http.HandleFunc("/gateway/telegram/list-point", web.ListPoint )
 	err := http.ListenAndServe(":8080", nil) // set listen port
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

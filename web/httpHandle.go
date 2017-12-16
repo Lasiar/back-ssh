@@ -8,6 +8,8 @@ import (
 	"log"
 	"encoding/json"
 
+	"strings"
+	"strconv"
 )
 
 func CountPoint(w http.ResponseWriter, r *http.Request) {
@@ -53,5 +55,19 @@ func InfoPoint(w http.ResponseWriter, r *http.Request) {
 		infoPoint.Success = true
 	}
 	jsonBlob, _ :=  json.Marshal(infoPoint)
+	fmt.Fprint(w, string(jsonBlob))
+}
+
+func ListPoint(w http.ResponseWriter, r *http.Request) {
+	var pointList lib.PointList
+	keysIp , err := lib.RedisDB.Keys("[0-9]*_ip").Result()
+	if err != nil {
+		fmt.Fprintf(w, "err get keys; %v", err)
+	}
+	for _, keyIp := range keysIp {
+		point, _ := strconv.Atoi(strings.Trim(keyIp, "_ip"))
+		pointList.Point = append(pointList.Point, point)
+		}
+	jsonBlob, _:= json.Marshal(pointList)
 	fmt.Fprint(w, string(jsonBlob))
 }

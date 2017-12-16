@@ -19,3 +19,7 @@ type InfoPointJs struct {
 	UserAgent string `json:"user_agent"`
 	Success   bool   `json:"success"`
 }
+
+type PointList struct {
+	Point []int `json:"point"`
+}
