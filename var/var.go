@@ -20,6 +20,11 @@ type InfoPointJs struct {
 	Success   bool   `json:"success"`
 }
 
-type PointList struct {
+type PointAllList struct {
 	Point []int `json:"point"`
+}
+
+type ListenJson struct {
+	Point      int             `json:"point"`
+	Statistics [][]interface{} `json:"statistics"`
 }

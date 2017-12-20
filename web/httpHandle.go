@@ -7,11 +7,31 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
 	"regexp"
 	"strconv"
 	"strings"
 )
+
+func ListPointToday(w http.ResponseWriter, r *http.Request) {
+	var listPointToday lib.PointAllList
+	var onePoint int
+	err := model.PingClick(lib.ClickDB)
+	if err != nil {
+		fmt.Fprintf(w, "ошибка подключения %v", err)
+	}
+	rows, err := lib.ClickDB.Query("select distinct point_id from stat.statistics where created = today()")
+	if err != nil {
+		log.Println(err)
+	}
+	for rows.Next() {
+		if err := rows.Scan(&onePoint); err != nil {
+			log.Fatal(err)
+		}
+		listPointToday.Point = append(listPointToday.Point, onePoint)
+	}
+	jsonBlob, _ := json.Marshal(listPointToday)
+	fmt.Fprint(w, string(jsonBlob))
+}
 
 func CountPoint(w http.ResponseWriter, r *http.Request) {
 	var pointCount lib.PointCount
@@ -60,8 +80,8 @@ func InfoPoint(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(jsonBlob))
 }
 
-func ListPoint(w http.ResponseWriter, r *http.Request) {
-	var pointList lib.PointList
+func ListAllPoint(w http.ResponseWriter, r *http.Request) {
+	var pointList lib.PointAllList
 	keysIp, err := lib.RedisDB.Keys("[0-9]*_ip").Result()
 	if err != nil {
 		fmt.Fprintf(w, "err get keys; %v", err)
@@ -72,4 +92,13 @@ func ListPoint(w http.ResponseWriter, r *http.Request) {
 	}
 	jsonBlob, _ := json.Marshal(pointList)
 	fmt.Fprint(w, string(jsonBlob))
+}
+
+func Listen(keyChan chan int) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		key := r.FormValue("key")
+		fmt.Fprint(w, "all ok	")
+		keyInt, _ := strconv.Atoi(key)
+		keyChan <- keyInt
+	}
 }
