@@ -33,7 +33,7 @@ func ListPointToday(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(jsonBlob))
 }
 
-func CountPoint(w http.ResponseWriter, r *http.Request) {
+func CountPoint(w http.ResponseWriter, _ *http.Request) {
 	var pointCount lib.PointCount
 	err := model.PingClick(lib.ClickDB)
 	if err != nil {
@@ -94,11 +94,34 @@ func ListAllPoint(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(jsonBlob))
 }
 
-func Listen(keyChan chan int) func(http.ResponseWriter, *http.Request) {
+func ListenAddKey(keyChan chan int) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		key := r.FormValue("key")
 		fmt.Fprint(w, "all ok	")
 		keyInt, _ := strconv.Atoi(key)
 		keyChan <- keyInt
+	}
+}
+
+func MakeHello(logger chan lib.Json) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//fmt.Fprint(w, key)
+		fmt.Fprint(w, "all ok")
+		decoder := json.NewDecoder(r.Body)
+		var t lib.Json
+		err := decoder.Decode(&t)
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Println("keys: ", lib.Keys)
+		fmt.Println("id=", t.Point)
+		for _, k := range lib.Keys {
+			fmt.Println(t.Point, "=", k)
+			if t.Point == k {
+				fmt.Println("Отправил", t)
+				logger <- t
+				fmt.Println("Отправил логгер")
+			}
+		}
 	}
 }

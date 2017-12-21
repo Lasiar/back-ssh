@@ -8,6 +8,7 @@ import (
 var (
 	ClickDB *sql.DB
 	RedisDB *redis.Client
+	Keys    []int
 )
 
 type PointCount struct {
@@ -25,6 +26,11 @@ type PointAllList struct {
 }
 
 type ListenJson struct {
+	Point      int             `json:"point"`
+	Statistics [][]interface{} `json:"statistics"`
+}
+
+type Json struct {
 	Point      int             `json:"point"`
 	Statistics [][]interface{} `json:"statistics"`
 }

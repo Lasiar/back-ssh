@@ -8,6 +8,11 @@ import (
 	"log"
 	"net/http"
 	"time"
+	//	"encoding/json"
+	"bytes"
+	//"io/ioutil"
+	"io/ioutil"
+	"encoding/json"
 )
 
 func init() {
@@ -17,29 +22,33 @@ func init() {
 
 func main() {
 	keyChannel := make(chan int)
-	listen := web.Listen(keyChannel)
+	logs := make(chan lib.Json)
+	//	keysChannel := make(chan []int)
+	listen := web.ListenAddKey(keyChannel)
+	print := web.MakeHello(logs)
 	ticker := time.NewTicker(time.Second * 1)
-	go listenParser(ticker, keyChannel)
+	go listenParser(ticker, keyChannel, logs)
 	http.HandleFunc("/gateway/telegram/count-point", web.CountPoint)
 	http.HandleFunc("/gateway/telegram/info-point", web.InfoPoint)
 	http.HandleFunc("/gateway/telegram/list-point", web.ListAllPoint)
-	http.HandleFunc("/gateway/telegram/listen", listen)
+	http.HandleFunc("/gateway/telegram/listen-add-key", listen)
 	http.HandleFunc("/gateway/telegram/list-point-today", web.ListPointToday)
+	http.HandleFunc("/gateway/telegram/print", print)
 	err := http.ListenAndServe(":8181", nil) // set listen port
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
 
-func listenParser(ticker *time.Ticker, keyChannel chan int) {
+func listenParser(ticker *time.Ticker, keyChannel chan int, logs chan lib.Json) {
 	delete := time.NewTicker(time.Second * 30)
-	var keys []int
+	//	var keys []int
 	keyDelete := make(chan int)
 	oldLenKeys := -1
 	for {
 		select {
 		case k := <-keyChannel:
-			keys = append(keys, k)
+			lib.Keys = append(lib.Keys, k)
 			go func(delete *time.Ticker, key chan int) {
 				select {
 				case <-delete.C:
@@ -47,25 +56,46 @@ func listenParser(ticker *time.Ticker, keyChannel chan int) {
 				}
 			}(delete, keyDelete)
 		case <-ticker.C:
-			if len(keys) != oldLenKeys {
-				fmt.Println(keys)
-				oldLenKeys = len(keys)
+			if len(lib.Keys) != oldLenKeys {
+				fmt.Println(lib.Keys)
+				oldLenKeys = len(lib.Keys)
 			}
 		case k := <-keyDelete:
-			keys = deleteFromValue(k, keys)
-
+			lib.Keys = deleteFromValue(k, lib.Keys)
+		case js := <-logs:
+			fmt.Println("Отправляю на телеграм: ", js)
+			SendAllStatistic(js)
 		}
 	}
 }
 
-func deleteFromValue(value int, array []int) ([]int) {
+func deleteFromValue(value int, array []int) []int {
 	fmt.Println("Удаляю", value)
 	var arrayCopy []int
-	for _, a := range array{
+	for _, a := range array {
 		if a != value {
 			arrayCopy = append(arrayCopy, a)
 		}
 	}
 	fmt.Println("Удалил")
 	return arrayCopy
+}
+
+func SendAllStatistic(jsonRaw lib.Json) {
+	url := "http://127.0.0.1:8282/listen"
+	jsonStr,_ := json.Marshal(jsonRaw)
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+	req.Header.Set("X-Custom-Header", "json")
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Ошибка отправки статистики на телеграм:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 }
