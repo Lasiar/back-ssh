@@ -1,8 +1,9 @@
 package web
 
 import (
+	"back-telega/lib"
 	"back-telega/model"
-	"back-telega/var"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -94,34 +95,54 @@ func ListAllPoint(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(jsonBlob))
 }
 
-func ListenAddKey(keyChan chan int) func(http.ResponseWriter, *http.Request) {
+func ComeGoodStatistic(comeStatistic chan lib.GoodJson) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		key := r.FormValue("key")
-		fmt.Fprint(w, "all ok	")
-		keyInt, _ := strconv.Atoi(key)
-		keyChan <- keyInt
-	}
-}
-
-func MakeHello(logger chan lib.Json) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		//fmt.Fprint(w, key)
-		fmt.Fprint(w, "all ok")
 		decoder := json.NewDecoder(r.Body)
-		var t lib.Json
+		var t lib.GoodJson
 		err := decoder.Decode(&t)
 		if err != nil {
 			log.Println(err)
 		}
-		fmt.Println("keys: ", lib.Keys)
-		fmt.Println("id=", t.Point)
-		for _, k := range lib.Keys {
-			fmt.Println(t.Point, "=", k)
-			if t.Point == k {
-				fmt.Println("Отправил", t)
-				logger <- t
-				fmt.Println("Отправил логгер")
-			}
+		comeStatistic <- t
+	}
+}
+
+func InitialGoodPoint(comeRequest chan lib.RequestGoodStatistic) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "all ok")
+		decoder := json.NewDecoder(r.Body)
+		var t lib.RequestGoodStatistic
+		err := decoder.Decode(&t)
+		if err != nil {
+			log.Println(err)
 		}
+		comeRequest <- t
+	}
+}
+func RecivedBadStatistic(logger chan lib.Json) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "all ok")
+		decoder := json.NewDecoder(r.Body)
+		var t lib.BadJson
+		err := decoder.Decode(&t)
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Println("ip: ", t.Ip)
+		fmt.Println("json=", t.Json)
+		url := "http://127.0.0.1:8282/bad"
+		fmt.Println("URL:>", url)
+
+		jsonStr, _ := json.Marshal(t)
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+		req.Header.Set("X-Custom-Header", "myvalue")
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
 	}
 }

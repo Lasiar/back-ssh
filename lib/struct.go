@@ -34,3 +34,20 @@ type Json struct {
 	Point      int             `json:"point"`
 	Statistics [][]interface{} `json:"statistics"`
 }
+
+type BadJson struct {
+	Ip   string
+	Json interface{}
+}
+
+type GoodJson struct {
+	Point    int
+	Datetime int64
+	Md5      string
+	Len      int
+}
+
+type RequestGoodStatistic struct {
+	ChatId int64 `json:"chat_id"`
+	Point  []int `json:"point"`
+}
