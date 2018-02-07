@@ -1,15 +1,17 @@
 package main
 
 import (
-	"back-telega/lib"
-	"back-telega/model"
+	"back-telega/configure"
 	"back-telega/system"
+	"back-telega/model"
+	"back-telega/lib"
 	"back-telega/web"
-	"log"
 	"net/http"
+	"log"
 )
 
 func init() {
+	lib.Config = configure.ReadConfig()
 	lib.ClickDB = model.NewClick("tcp://192.168.0.145:9000")
 	lib.RedisDB = model.NewRedis()
 }

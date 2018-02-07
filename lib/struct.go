@@ -51,3 +51,7 @@ type RequestGoodStatistic struct {
 	ChatId int64 `json:"chat_id"`
 	Point  []int `json:"point"`
 }
+
+type Configure struct {
+	ChatId []int64 `json:"chat_id"`
+}
