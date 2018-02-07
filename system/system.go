@@ -23,7 +23,13 @@ func WorkerSendGoodStatistic(jsonStatistic chan lib.GoodJson, jsonRequest chan l
 					case jsOld.Point != js.Point:
 						break
 					case jsOld.Md5 == js.Md5:
-						fmt.Println("WARNING")
+						url := fmt.Sprint("http://127.0.0.1:8282/message?message=	id_машины:",js.Point, "_hash:_", js.Md5, "_задвойка&chat-id=379572314	")
+						fmt.Println(url)
+						_, err := http.Get(url)
+						if err != nil {
+							fmt.Println(err)
+						}
+						fmt.Println("Отправил")
 					default:
 						arrJsOld = reWrite(js, arrJsOld, i)
 					}
